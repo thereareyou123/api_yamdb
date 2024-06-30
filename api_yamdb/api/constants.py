@@ -1,0 +1,1 @@
+CUTTED_TITLE_SIZE: int = 64
