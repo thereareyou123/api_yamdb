@@ -3,22 +3,22 @@ from rest_framework import routers
 
 from . import views
 
-router = routers.DefaultRouter()
-router.register(r'titles', views.TitleViewSet)
-router.register(r'categories', views.CategoryViewSet)
-router.register(r'genres', views.GenreViewSet)
-router.register(
+router_v1 = routers.DefaultRouter()
+router_v1.register('titles', views.TitleViewSet, basename='titles')
+router_v1.register('categories', views.CategoryViewSet, basename='categories')
+router_v1.register('genres', views.GenreViewSet, basename='genres')
+router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews',
     views.ReviewViewSet,
     basename='reviews'
 )
-router.register(
+router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)'
     r'/comments',
     views.CommentViewSet,
     basename='comments'
 )
-router.register(
+router_v1.register(
     'users',
     views.UserViewSet,
     basename='users'
@@ -31,5 +31,5 @@ auth_patterns = [
 
 urlpatterns = [
     path('v1/auth/', include(auth_patterns)),
-    path('v1/', include(router.urls)),
+    path('v1/', include(router_v1.urls)),
 ]
