@@ -1,27 +1,30 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from django.db import IntegrityError
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from rest_framework import mixins, permissions, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .filters import TitleFilter
-from .permissions import (AdminOrReadOnly, IsAdmin,
-                          IsAuthorModeratorAdminOrReadOnly)
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer, SignUpSerializer,
-                          TitleCreateSerializer, TitleReadSerializer,
-                          TokenSerializer, UserSerializer)
+from api.filters import TitleFilter
+from api.mixins import ListCreateDestroyViewSet
+from api.permissions import (AdminOrReadOnly, IsAdmin,
+                             IsAuthorModeratorAdminOrReadOnly)
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, ReviewSerializer,
+                             SignUpSerializer, TitleCreateSerializer,
+                             TitleReadSerializer, TokenSerializer,
+                             UserSerializer)
 from reviews.models import Category, Genre, Review, Title
-from users.models import User
+
+
+User = get_user_model()
 
 
 @api_view(['POST'])
@@ -29,18 +32,7 @@ from users.models import User
 def signup(request):
     serializer = SignUpSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
-    try:
-        user, _ = User.objects.get_or_create(
-            username=request.data['username'],
-            email=request.data['email']
-        )
-
-    except IntegrityError:
-        raise ValidationError(
-            'Неверное сочетание имени пользователя и email'
-        )
-
+    user = serializer.save()
     confirmation_code = default_token_generator.make_token(user)
 
     send_mail(
@@ -49,7 +41,6 @@ def signup(request):
         from_email=settings.EMAIL_BACKEND,
         recipient_list=[user.email],
     )
-
     return Response(
         serializer.data,
         status=status.HTTP_200_OK
@@ -97,23 +88,11 @@ class UserViewSet(ModelViewSet):
         return Response(serializer.data)
 
 
-class ListCreateDestroyViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
-    filter_backends = (SearchFilter, )
-    search_fields = ('name', )
-    permission_classes = (AdminOrReadOnly,)
-    lookup_field = 'slug'
-    pagination_class = LimitOffsetPagination
-
-
 class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete')
-    queryset = Title.objects.all()
-    pagination_class = LimitOffsetPagination
+    queryset = Title.objects.all().annotate(
+        rating=Avg('reviews__score')
+    )
     permission_classes = (AdminOrReadOnly,)
     filterset_class = TitleFilter
 
@@ -135,7 +114,6 @@ class GenreViewSet(ListCreateDestroyViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    pagination_class = LimitOffsetPagination
     permission_classes = (IsAuthorModeratorAdminOrReadOnly,
                           permissions.IsAuthenticatedOrReadOnly)
     http_method_names = ('get', 'post', 'patch', 'delete')
@@ -152,13 +130,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    pagination_class = LimitOffsetPagination
     permission_classes = (IsAuthorModeratorAdminOrReadOnly,
                           permissions.IsAuthenticatedOrReadOnly)
     http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_review(self):
-        return get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        return get_object_or_404(Review,
+                                 id=self.kwargs.get('review_id'),
+                                 title_id=self.kwargs['title_id'])
 
     def get_queryset(self):
         return self.get_review().comments.all()

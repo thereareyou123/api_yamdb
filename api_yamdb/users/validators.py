@@ -9,5 +9,5 @@ def validate_username(value):
         raise ValidationError(msg)
     if not re.match(r'[\w.@+-]+\Z$', value):
         raise ValidationError(
-            'Запрещённые символы в никнейме'
+            'Разрешается использовать только буквы, цифры и символы @/./+/-/_'
         )

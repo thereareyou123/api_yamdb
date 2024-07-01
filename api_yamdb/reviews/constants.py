@@ -1,0 +1,4 @@
+NAME = 256
+SLUG = 50
+MIN = 1
+MAX = 10
