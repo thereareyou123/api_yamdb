@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from users.constants import NAME, EMAIL
+from users.constants import NAME_MAX_LENGTH, EMAIL_MAX_LENGTH
 from users.validators import validate_username
 
 USER = 'user'
@@ -19,13 +19,13 @@ class User(AbstractUser):
 
     username = models.CharField(
         'Имя пользователя',
-        max_length=NAME,
+        max_length=NAME_MAX_LENGTH,
         unique=True,
         validators=(validate_username,)
     )
     email = models.EmailField(
         'Адрес электронной почты',
-        max_length=EMAIL,
+        max_length=EMAIL_MAX_LENGTH,
         unique=True
     )
     bio = models.TextField(
@@ -35,12 +35,12 @@ class User(AbstractUser):
     first_name = models.CharField(
         'Имя',
         blank=True,
-        max_length=NAME
+        max_length=NAME_MAX_LENGTH
     )
     last_name = models.CharField(
         'Фамилия',
         blank=True,
-        max_length=NAME
+        max_length=NAME_MAX_LENGTH
     )
     role = models.CharField(
         'Роль',

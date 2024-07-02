@@ -4,18 +4,23 @@ from django.db import models
 from django.template.defaultfilters import truncatechars
 
 from api import constants
-from reviews.constants import NAME, SLUG, MIN, MAX
+from reviews.constants import (
+    NAME_MAX_LENGTH, SLUG_MAX_LENGTH, MIN_SCORE, MAX_SCORE)
 from reviews.validators import validate_year
 
 User = get_user_model()
 
 
 class CategoryGenreBaseModel(models.Model):
-    name = models.CharField('Название', max_length=NAME)
-    slug = models.SlugField('Идентификатор', max_length=SLUG, unique=True)
+    name = models.CharField('Название', max_length=NAME_MAX_LENGTH)
+    slug = models.SlugField(
+        'Идентификатор',
+        max_length=SLUG_MAX_LENGTH,
+        unique=True)
 
     class Meta:
         abstract = True
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -23,22 +28,22 @@ class CategoryGenreBaseModel(models.Model):
 
 class Category(CategoryGenreBaseModel):
 
-    class Meta:
+    class Meta(CategoryGenreBaseModel.Meta):
         verbose_name = 'категория'
         verbose_name_plural = 'категории'
-        ordering = ('name',)
 
 
 class Genre(CategoryGenreBaseModel):
 
-    class Meta:
+    class Meta(CategoryGenreBaseModel.Meta):
         verbose_name = 'жанр'
         verbose_name_plural = 'жанры'
-        ordering = ('name',)
 
 
 class Title(models.Model):
-    name = models.TextField('Название произведения', max_length=NAME)
+    name = models.TextField(
+        'Название произведения',
+        max_length=NAME_MAX_LENGTH)
     description = models.TextField('Описание', blank=True)
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL,
@@ -106,11 +111,11 @@ class Review(models.Model):
         'Оценка',
         validators=[
             MinValueValidator(
-                MIN,
+                MIN_SCORE,
                 message='Оценка не может быть меньше чем 1'
             ),
             MaxValueValidator(
-                MAX,
+                MAX_SCORE,
                 message='Оценка не может быть больше чем 10'
             )
         ],
