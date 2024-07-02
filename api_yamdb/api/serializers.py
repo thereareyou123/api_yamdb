@@ -1,12 +1,14 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import ValidationError
 
-from api.constants import USERNAME, EMAIL
+from users.constants import NAME_MAX_LENGTH, EMAIL_MAX_LENGTH
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.validators import validate_username
 
@@ -33,10 +35,10 @@ class UserSerializer(UserAdminSerializer):
 class SignUpSerializer(serializers.Serializer):
     """Serializer для регистрации пользователя."""
 
-    username = serializers.CharField(max_length=USERNAME,
+    username = serializers.CharField(max_length=NAME_MAX_LENGTH,
                                      required=True,
                                      validators=(validate_username,))
-    email = serializers.EmailField(max_length=EMAIL,
+    email = serializers.EmailField(max_length=EMAIL_MAX_LENGTH,
                                    required=True)
 
     def create(self, validated_data):
@@ -52,15 +54,24 @@ class SignUpSerializer(serializers.Serializer):
             raise ValidationError(
                 'Неверное сочетание имени пользователя и email'
             )
+        confirmation_code = default_token_generator.make_token(user)
+
+        send_mail(
+            subject='Код подтверждения для Yamdb',
+            message=f'Ваш код: {confirmation_code}',
+            from_email=settings.EMAIL_BACKEND,
+            recipient_list=[user.email],
+        )
+
         return user
 
 
 class TokenSerializer(serializers.Serializer):
     """Serializer для проверки токена."""
 
-    username = serializers.CharField(max_length=USERNAME,
+    username = serializers.CharField(max_length=NAME_MAX_LENGTH,
                                      required=True,)
-    confirmation_code = serializers.CharField(max_length=USERNAME,
+    confirmation_code = serializers.CharField(max_length=NAME_MAX_LENGTH,
                                               required=True,)
 
     def validate(self, data):

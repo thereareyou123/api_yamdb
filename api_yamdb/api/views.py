@@ -1,7 +1,4 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
@@ -32,15 +29,8 @@ User = get_user_model()
 def signup(request):
     serializer = SignUpSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    user = serializer.save()
-    confirmation_code = default_token_generator.make_token(user)
+    serializer.save()
 
-    send_mail(
-        subject='Код подтверждения для Yamdb',
-        message=f'Ваш код: {confirmation_code}',
-        from_email=settings.EMAIL_BACKEND,
-        recipient_list=[user.email],
-    )
     return Response(
         serializer.data,
         status=status.HTTP_200_OK
@@ -92,7 +82,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete')
     queryset = Title.objects.all().annotate(
         rating=Avg('reviews__score')
-    )
+    ).order_by('name')
     permission_classes = (AdminOrReadOnly,)
     filterset_class = TitleFilter
 
