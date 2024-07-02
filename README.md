@@ -55,3 +55,8 @@ python manage.py runserver
 * djangorestframework
 * Simple JWT
 * SQLite
+
+## Авторы работы студенты Яндекс Практикума:
+
+[Никита Рохлин](https://github.com/thereareyou123)
+[Андрей Смирнов](https://github.com/4ndrew-coder)
