@@ -62,7 +62,7 @@ class Command(BaseCommand):
         for row in DictReader(
                 open('static/data/review.csv', encoding='UTF-8')):
             Review.objects.get_or_create(
-                title=Title.objects.get(pk=row.pop('title_id')),
+                title=Title.objects.get(id=row.pop('title_id')),
                 author=User.objects.get(id=row.pop('author')),
                 **row)
 
